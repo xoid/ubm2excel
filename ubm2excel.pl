@@ -10,9 +10,9 @@ my $workbook = Excel::Writer::XLSX->new($filename) or die $!;
 my $header_format = $workbook->add_format(); $header_format->set_bold(); $header_format->set_align( 'center' );
 
 # Add a worksheet
-my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row(1, qw/ Время Мбайт /, $header_format ); 
-my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row(1, qw/ ИсходящийIP Имя ВходящийIP Имя Мбайт /, $header_format);
-my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row(1, qw/Время Мбайт/, $header_format); 
+my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format ); 
+my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', [ 'ИсходящийIP', 'Имя', 'ВходящийIP', 'Имя', 'Мбайт' ], $header_format);
+my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format); 
 
 my (%TIME, %IP, %PORT);
 
