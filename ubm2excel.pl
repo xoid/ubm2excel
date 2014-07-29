@@ -18,6 +18,7 @@ my @port_header = qw/Порт  Мбайт/;
 my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', \@ip_header,   $header_format);
 my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', \@time_header, $header_format ); 
 my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', \@port_header, $header_format); 
+$ip_vkl->set_column(0, 3, 40); # first 4 column width set to 40
 
 my (%TIME, %IP, %PORT);
 
@@ -31,11 +32,10 @@ while (<>)
 	 $TIME{$time} += $bytes;
 }
 
-my $ip_arr = hashref2arrayref(\%IP);
+
+my $ip_arr   = hashref2arrayref(\%IP);
 my $port_arr = hashref2arrayref(\%PORT);
 my $time_arr = hashref2arrayref(\%TIME);
-
-
 
 sub hashref2arrayref
 {
@@ -43,21 +43,20 @@ sub hashref2arrayref
 	my $arrayref = [];
 	foreach my $key (keys %$hash)
 	{
-		push [ $key, $hash->{$key}], @$arrayref;
+		#warn '.';
+		$hash->{$key} /= 1024*1024;
+		my @keys = split /_/, $key;
+		push @$arrayref, [ @keys, $hash->{$key} ];
 	}
+	# sort by last value
+	sort { $a->[-1] <=> $b->[-1] } @$arrayref;
 	return $arrayref;
 }
 
-sub sort_print_hash
-{
-	my ($hash, $worksheet) = @_;
-	my ($row, $col) = (3, 1);
-	foreach my $key ( sort hash_comp (keys %$hash))
-	{
-		$worksheet->write(1, $key);
-        print "$key\t$TRAF{$key}\n";
-	}
-}
+# write to worksheets
+$ip_vkl->write  ('B1', hashref2arrayref(\%IP));
+$time_vkl->write('B1', hashref2arrayref(\%TIME));
+$port_vkl->write('B1', hashref2arrayref(\%PORT));
 
 #    $format->set_color( 'red' );
 #    $format->set_align( 'center' );
@@ -80,6 +79,16 @@ sub hash_comp {   $TRAF->{$b} <=> $TRAF->{$a}   }
 
 #sub cp1251 { encode('cp1251', shift) }
 
+my %RESOLVE;
 
+sub resolve_ip
+{
+	my $ip = shift;
+	if ($RESOLVE{$ip} ne undef) { return $RESOLVE{$ip} }
+	$RESOLVE{$ip} = `host $ip|head -1| cut -f 5 -d ' ' | sed 's/\.$//'`;
+	if ($RESOLVE{$ip} eq '' or $RESOLVE{$ip} eq undef or $RESOLVE{$ip} eq '3(NXDOMAIN)')
+		{ return 'не определить' }
+	return $RESOLVE{$ip};
+}
 
 
