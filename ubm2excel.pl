@@ -3,16 +3,21 @@
 my $filename = $ARGV[0] || 'ubm2excel.xlsx';
 
 use Excel::Writer::XLSX;
+use utf8;
 
 # Create a new Excel workbook
 my $workbook = Excel::Writer::XLSX->new($filename) or die $!;
 #  Add and define a format
 my $header_format = $workbook->add_format(); $header_format->set_bold(); $header_format->set_align( 'center' );
 
+# headers
+my @ip_header   = qw/ИсходящийIP Имя ВходящийIP Имя Мбайт/;
+my @time_header = qw/Время Мбайт/;
+my @port_header = qw/Порт  Мбайт/;
 # Add a worksheet
-my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format ); 
-my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', [ 'ИсходящийIP', 'Имя', 'ВходящийIP', 'Имя', 'Мбайт' ], $header_format);
-my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format); 
+my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', \@ip_header,   $header_format);
+my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', \@time_header, $header_format ); 
+my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', \@port_header, $header_format); 
 
 my (%TIME, %IP, %PORT);
 
@@ -20,8 +25,8 @@ my (%TIME, %IP, %PORT);
 while (<>)
 {    chomp;
 	 my ($bytes, $src, $dst, $port1, $port2, $time) = m/h:(\d+).*A:(\S+).*B:(\S+).*a:(\S+).*b:(\S+).*E:(..........)/;
-
-	 $IP{$src."\t".$dst} += $bytes;
+	 $time =~ s/(....)(..)(..)(..)/$1-$2-$3 $4:00/;
+	 $IP{$src."_".$dst} += $bytes;
 	 $PORT{$port1} += $bytes;
 	 $TIME{$time} += $bytes;
 }
@@ -72,6 +77,8 @@ sub sort_print_hash
 #}
 
 sub hash_comp {   $TRAF->{$b} <=> $TRAF->{$a}   }
+
+#sub cp1251 { encode('cp1251', shift) }
 
 
 
