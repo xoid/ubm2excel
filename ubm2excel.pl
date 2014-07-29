@@ -33,10 +33,6 @@ while (<>)
 }
 
 
-my $ip_arr   = hashref2arrayref(\%IP);
-my $port_arr = hashref2arrayref(\%PORT);
-my $time_arr = hashref2arrayref(\%TIME);
-
 sub hashref2arrayref
 {
 	my $hash = shift;
@@ -45,18 +41,20 @@ sub hashref2arrayref
 	{
 		#warn '.';
 		$hash->{$key} /= 1024*1024;
-		my @keys = split /_/, $key;
-		push @$arrayref, [ @keys, $hash->{$key} ];
+		if (my ($src_ip, $dst_ip) = split /_/, $key) # this is ip
+		{
+			push @$arrayref, [ $src_ip, resolve($src_ip), $dst_ip, resolve($dst_ip), $hash->{$key} ];
+		};
+		push @$arrayref, [ $key, $hash->{$key} ];
 	}
 	# sort by last value
-	sort { $a->[-1] <=> $b->[-1] } @$arrayref;
-	return $arrayref;
+	return sort { $a->[-1] <=> $b->[-1] } @$arrayref;
 }
 
 # write to worksheets
-$ip_vkl->write  ('B1', hashref2arrayref(\%IP));
-$time_vkl->write('B1', hashref2arrayref(\%TIME));
-$port_vkl->write('B1', hashref2arrayref(\%PORT));
+$ip_vkl->write  ('A2', hashref2arrayref(\%IP));
+$time_vkl->write('A2', hashref2arrayref(\%TIME));
+$port_vkl->write('A2', hashref2arrayref(\%PORT));
 
 #    $format->set_color( 'red' );
 #    $format->set_align( 'center' );
@@ -81,13 +79,14 @@ sub hash_comp {   $TRAF->{$b} <=> $TRAF->{$a}   }
 
 my %RESOLVE;
 
-sub resolve_ip
+sub resolve
 {
 	my $ip = shift;
-	if ($RESOLVE{$ip} ne undef) { return $RESOLVE{$ip} }
-	$RESOLVE{$ip} = `host $ip|head -1| cut -f 5 -d ' ' | sed 's/\.$//'`;
-	if ($RESOLVE{$ip} eq '' or $RESOLVE{$ip} eq undef or $RESOLVE{$ip} eq '3(NXDOMAIN)')
-		{ return 'не определить' }
+	if ((1+length $ip) < 5) {return ''}
+	if ( length $RESOLVE{$ip} ) { return $RESOLVE{$ip} } # cached
+	$RESOLVE{$ip} = `host $ip|head -1| cut -f 5 -d ' ' | sed 's/\.\$//'`;
+	if (! length $RESOLVE{$ip} or $RESOLVE{$ip} eq '3(NXDOMAIN)')
+		{ return 'неизвестно' } # не шмогла
 	return $RESOLVE{$ip};
 }
 
