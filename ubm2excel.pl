@@ -1,6 +1,8 @@
 #!/usr/bin/perl -w
 
 my $filename = $ARGV[0] || 'ubm2excel.xlsx';
+use encoding "ru_RU.CP1251";
+#use Encode;
 
 use Excel::Writer::XLSX;
 
@@ -10,8 +12,8 @@ my $workbook = Excel::Writer::XLSX->new($filename) or die $!;
 my $header_format = $workbook->add_format(); $header_format->set_bold(); $header_format->set_align( 'center' );
 
 # Add a worksheet
-my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format ); 
 my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', [ 'ИсходящийIP', 'Имя', 'ВходящийIP', 'Имя', 'Мбайт' ], $header_format);
+my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format ); 
 my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format); 
 
 my (%TIME, %IP, %PORT);
@@ -74,5 +76,6 @@ sub sort_print_hash
 sub hash_comp {   $TRAF->{$b} <=> $TRAF->{$a}   }
 
 
+sub cp1251 { encode('1251', shift) }
 
 
