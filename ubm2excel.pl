@@ -1,20 +1,36 @@
 #!/usr/bin/perl -w
 
-my $filename = $ARGV[0] || 'ubm2excel.xlsx';
+# comment 1
+# comment 2
+# comment 3
+
+my $filename = $ARGV[0] || 'output.xlsx';
 use encoding "ru_RU.CP1251";
 #use Encode;
 
 use Excel::Writer::XLSX;
+use utf8;
 
 # Create a new Excel workbook
 my $workbook = Excel::Writer::XLSX->new($filename) or die $!;
 #  Add and define a format
 my $header_format = $workbook->add_format(); $header_format->set_bold(); $header_format->set_align( 'center' );
 
+# headers
+my @ip_header   = qw/ИсходящийIP Имя ВходящийIP Имя Мбайт/;
+my @time_header = qw/Время Мбайт/;
+my @port_header = qw/Порт  Мбайт/;
 # Add a worksheet
+<<<<<<< HEAD
 my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', [ 'ИсходящийIP', 'Имя', 'ВходящийIP', 'Имя', 'Мбайт' ], $header_format);
 my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format ); 
 my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', [ 'Время', 'Мбайт' ], $header_format); 
+=======
+my $ip_vkl   = $workbook->add_worksheet('IP адреса');    $ip_vkl->write_row  ('A1', \@ip_header,   $header_format);
+my $time_vkl = $workbook->add_worksheet('Время');        $time_vkl->write_row('A1', \@time_header, $header_format ); 
+my $port_vkl = $workbook->add_worksheet('Порты');        $port_vkl->write_row('A1', \@port_header, $header_format); 
+$ip_vkl->set_column(0, 3, 40); # first 4 column width set to 40
+>>>>>>> 5d66730b1ff8c1663d57a00cac5722d1d8c00141
 
 my (%TIME, %IP, %PORT);
 
@@ -22,16 +38,11 @@ my (%TIME, %IP, %PORT);
 while (<>)
 {    chomp;
 	 my ($bytes, $src, $dst, $port1, $port2, $time) = m/h:(\d+).*A:(\S+).*B:(\S+).*a:(\S+).*b:(\S+).*E:(..........)/;
-
-	 $IP{$src."\t".$dst} += $bytes;
+	 $time =~ s/(....)(..)(..)(..)/$1-$2-$3 $4:00/;
+	 $IP{$src."_".$dst} += $bytes;
 	 $PORT{$port1} += $bytes;
 	 $TIME{$time} += $bytes;
 }
-
-my $ip_arr = hashref2arrayref(\%IP);
-my $port_arr = hashref2arrayref(\%PORT);
-my $time_arr = hashref2arrayref(\%TIME);
-
 
 
 sub hashref2arrayref
@@ -40,21 +51,22 @@ sub hashref2arrayref
 	my $arrayref = [];
 	foreach my $key (keys %$hash)
 	{
-		push [ $key, $hash->{$key}], @$arrayref;
+		#warn '.';
+		$hash->{$key} /= 1024*1024;
+		if (my ($src_ip, $dst_ip) = split /_/, $key) # this is ip
+		{
+			push @$arrayref, [ $src_ip, resolve($src_ip), $dst_ip, resolve($dst_ip), $hash->{$key} ];
+		};
+		push @$arrayref, [ $key, $hash->{$key} ];
 	}
-	return $arrayref;
+	# sort by last value
+	return sort { $a->[-1] <=> $b->[-1] } @$arrayref;
 }
 
-sub sort_print_hash
-{
-	my ($hash, $worksheet) = @_;
-	my ($row, $col) = (3, 1);
-	foreach my $key ( sort hash_comp (keys %$hash))
-	{
-		$worksheet->write(1, $key);
-        print "$key\t$TRAF{$key}\n";
-	}
-}
+# write to worksheets
+$ip_vkl->write  ('A2', hashref2arrayref(\%IP));
+$time_vkl->write('A2', hashref2arrayref(\%TIME));
+$port_vkl->write('A2', hashref2arrayref(\%PORT));
 
 #    $format->set_color( 'red' );
 #    $format->set_align( 'center' );
@@ -75,7 +87,23 @@ sub sort_print_hash
 
 sub hash_comp {   $TRAF->{$b} <=> $TRAF->{$a}   }
 
+#sub cp1251 { encode('cp1251', shift) }
 
+my %RESOLVE;
+
+<<<<<<< HEAD
 sub cp1251 { encode('1251', shift) }
+=======
+sub resolve
+{
+	my $ip = shift;
+	if ((1+length $ip) < 5) {return ''}
+	if ( length $RESOLVE{$ip} ) { return $RESOLVE{$ip} } # cached
+	$RESOLVE{$ip} = `host $ip|head -1| cut -f 5 -d ' ' | sed 's/\.\$//'`;
+	if (! length $RESOLVE{$ip} or $RESOLVE{$ip} eq '3(NXDOMAIN)')
+		{ return 'неизвестно' } # не шмогла
+	return $RESOLVE{$ip};
+}
+>>>>>>> 5d66730b1ff8c1663d57a00cac5722d1d8c00141
 
 
