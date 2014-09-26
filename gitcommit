@@ -1,0 +1,7 @@
+if [ "$1" == "" ]
+then
+	M=lol
+else
+	M=$1
+fi		
+git commit -a -m "$M"; git push
