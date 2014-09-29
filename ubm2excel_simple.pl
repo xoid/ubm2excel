@@ -71,7 +71,7 @@ foreach my $day (sort_by_val(\%DAY))
 
 $workbook->close() or die "Error closing file: $!";
 sub resolve
-{	return 'lol';
+{	#return 'lol';
 	my $ip = shift;
 	if ((1+length $ip) < 5) {return ''}
 	if ( defined $RESOLVE{$ip} ) 
